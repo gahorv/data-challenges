@@ -7,7 +7,7 @@ import json
 input_json = json.load(open('input.json','r'))
 data_args = json.load(open('data.json','r'))
 data = pd.read_csv(data_args['staging_folder'] + '/filtered.csv')
-num = int(100 / len(data))
+num = 100 / len(data)
 out = [] 
 
 for place in input_json:

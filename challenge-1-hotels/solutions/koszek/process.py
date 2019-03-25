@@ -10,7 +10,7 @@ df2 = pd.DataFrame.from_dict(input_json, orient = "columns")
 out = []
     
 for i in df2.index:
-    df['distance'] = ((df2.get_value(i, 'lon')-df['lon']) **2 + (df2.get_value(i, 'lat')-df['lat'] **2))
+    df['distance'] = ((df2.get_value(i, 'lon')-df['lon']) **2 + (df2.get_value(i, 'lat')-df['lat'] ) **2)
     out.append(df.ix[df['distance'].idxmin(),["lon","lat","name"]].to_dict().copy())
 
 json.dump(out,open('output.json','w'))
