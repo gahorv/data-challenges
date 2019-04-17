@@ -23,6 +23,7 @@ def comparison_test(data_dicts,input_set,
     os.makedirs(envdir)
     solutions = next(os.walk('solutions'))[1]
     solutions.sort()
+    solutions = [s for s in solutions if (not s.startswith('.'))]
     timedata = []
     output_set = {}
     for solution in tqdm(solutions):
@@ -47,12 +48,21 @@ def comparison_test(data_dicts,input_set,
             if verbose:
                 print('Starting ETL process')
             etl_proc = subprocess.Popen([solution_python_executor,
-                            slash.join(['solutions',solution,'ETL.py'])],stdout=subprocess.PIPE)
+                            slash.join(['solutions',solution,'ETL.py'])],stderr=subprocess.PIPE)
             if verbose:
                 print('ETL process started')
           
+            running_time = 0
             while etl_proc.poll() is None:
                 time.sleep(3)
+                running_time += 3
+                if (running_time >= 60) and (running_time % 10) == 0:
+                    print('ETL process taking over %d seconds' % running_time)
+            if etl_proc.poll() != 0:
+                print('error in ETL')
+                print(etl_proc.stderr.read().decode('utf-8'))
+                raise(RuntimeError)
+                
             if verbose:
                 print('ETL process done')
             
@@ -60,9 +70,16 @@ def comparison_test(data_dicts,input_set,
                 output_set[solution][data_name][input_name] = []
                 for input_dic in input_dictlist:
                     json.dump(input_dic,open('input.json','w'))
-                    start_time = time.time()
-                    subprocess.call([solution_python_executor,
-                            slash.join(['solutions',solution,'process.py'])])
+                    start_time = time.time()                    
+                    _proc = subprocess.Popen([solution_python_executor,
+                            slash.join(['solutions',solution,'process.py'])],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+                    _proc.wait()
+                    (_stdout, _stderr) = _proc.communicate()
+                    if _proc.returncode != 0:
+                        print(_stderr.decode('utf-8'))
+                        raise(RuntimeError)
                     calc_time = time.time() - start_time
                     timedata.append({'calc_time':calc_time,
                                     'input_id':input_name,
